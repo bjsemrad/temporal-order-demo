@@ -6,18 +6,14 @@ type FraudServiceClient struct {
 	//TODO setup credentials to talk to the fraud servicea
 }
 
-type FraudDecision struct {
-	FraudDetected   bool
-	RejectionReason string
-}
-
 func InitializeClient() *FraudServiceClient {
 	return &FraudServiceClient{}
 }
 
 func (c *FraudServiceClient) ValidateOrder(order order.Order) (FraudDecision, error) {
 	result := FraudDecision{
-		FraudDetected: false,
+		FraudDetected:   false,
+		RejectionReason: "",
 	}
 	if len(order.Lines) > 5 {
 		result.FraudDetected = true

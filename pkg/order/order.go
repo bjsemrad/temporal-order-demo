@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-const OrderIntakeTaskQueueName = "ORDER_SUBMITTED_INTAKET_TASK_QUEUE"
-
 type Order struct {
 	Status      OrderStatus
 	OrderNumber string

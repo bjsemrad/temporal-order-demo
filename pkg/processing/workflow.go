@@ -1,10 +1,10 @@
 package processing
 
 import (
-	"fmt"
 	"temporal-order-demo/pkg/order"
 	"temporal-order-demo/pkg/processing/event"
 	pfraud "temporal-order-demo/pkg/processing/fraud"
+	processorqueue "temporal-order-demo/pkg/queue"
 	sfraud "temporal-order-demo/pkg/services/fraud"
 	"time"
 
@@ -12,13 +12,13 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) { //TODO comeback to the workflow outpu
+func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
 
 	retrypolicy := &temporal.RetryPolicy{
 		InitialInterval:    time.Second,
 		BackoffCoefficient: 2.0,
 		MaximumInterval:    120 * time.Second,
-		MaximumAttempts:    500, // 0 is unlimited retries
+		MaximumAttempts:    500, // 0 is unlimited retries, this will retry if there is no workers as well.
 		// NonRetryableErrorTypes: []string{"TODO"},
 	}
 
@@ -32,7 +32,7 @@ func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) { //T
 
 	fraudErr := handleFraudCheck(ctx, input)
 	if fraudErr != nil {
-		return "", fraudErr
+		return *input, fraudErr
 	}
 
 	// // Deposit money.
@@ -58,14 +58,18 @@ func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) { //T
 	// }
 	//
 	// result := fmt.Sprintf("Order Procesing complete for order: %s)", input.OrderNumber)
-	return "", nil
+	return *input, nil
 }
 
 // TODO Turn this into a sub-workflow
-func handleFraudCheck(ctx workflow.Context, input order.Order) error {
+func handleFraudCheck(ctx workflow.Context, input *order.Order) error {
 	var fraudEventOutput event.EventEmitOutput
+	input.UpdateStatus(order.PendingFraudReview)
 	//Emit pending fraud review event
-	emitEventErr := workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &fraudEventOutput)
+	emitEventErr := workflow.ExecuteActivity(
+		workflow.WithTaskQueue(ctx, processorqueue.EventEmitterTaskQueueName),
+		event.EmitEvent,
+		input).Get(ctx, &fraudEventOutput)
 
 	if emitEventErr != nil {
 		return emitEventErr
@@ -73,7 +77,10 @@ func handleFraudCheck(ctx workflow.Context, input order.Order) error {
 
 	var fraudOutput sfraud.FraudDecision
 	// Execute Fraud Check
-	fraudErr := workflow.ExecuteActivity(ctx, pfraud.CheckOrderFraudulent, input).Get(ctx, &fraudOutput)
+	fraudErr := workflow.ExecuteActivity(
+		workflow.WithTaskQueue(ctx, processorqueue.FraudTaskQueueName),
+		pfraud.CheckOrderFraudulent,
+		input).Get(ctx, &fraudOutput)
 
 	if fraudErr != nil {
 		return fraudErr
@@ -84,7 +91,11 @@ func handleFraudCheck(ctx workflow.Context, input order.Order) error {
 	if fraudOutput.FraudDetected {
 		//TODO REVISIT THIS AS WE WILL WANT TO DEAL WITH EVENTS DIFFERENTLY
 		//Emit fraud detected event
-		emitEventErr := workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &eventOutput)
+		input.UpdateStatus(order.Fraudlent)
+		emitEventErr := workflow.ExecuteActivity(
+			workflow.WithTaskQueue(ctx, processorqueue.EventEmitterTaskQueueName),
+			event.EmitEvent,
+			input).Get(ctx, &eventOutput)
 
 		if emitEventErr != nil {
 			return emitEventErr
@@ -92,7 +103,11 @@ func handleFraudCheck(ctx workflow.Context, input order.Order) error {
 	}
 
 	//Emit Fraud Review Complete
-	emitEventErr = workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &eventOutput)
+	input.UpdateStatus(order.NoFraudDetected)
+	emitEventErr = workflow.ExecuteActivity(
+		workflow.WithTaskQueue(ctx, processorqueue.EventEmitterTaskQueueName),
+		event.EmitEvent,
+		input).Get(ctx, &eventOutput)
 
 	if emitEventErr != nil {
 		return emitEventErr
