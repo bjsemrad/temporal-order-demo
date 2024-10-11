@@ -100,17 +100,17 @@ func handleFraudCheck(ctx workflow.Context, input *order.Order) error {
 		if emitEventErr != nil {
 			return emitEventErr
 		}
-	}
+	} else {
+		//Emit Fraud Review Complete
+		input.UpdateStatus(order.NoFraudDetected)
+		emitEventErr = workflow.ExecuteActivity(
+			workflow.WithTaskQueue(ctx, processorqueue.EventEmitterTaskQueueName),
+			event.EmitEvent,
+			input).Get(ctx, &eventOutput)
 
-	//Emit Fraud Review Complete
-	input.UpdateStatus(order.NoFraudDetected)
-	emitEventErr = workflow.ExecuteActivity(
-		workflow.WithTaskQueue(ctx, processorqueue.EventEmitterTaskQueueName),
-		event.EmitEvent,
-		input).Get(ctx, &eventOutput)
-
-	if emitEventErr != nil {
-		return emitEventErr
+		if emitEventErr != nil {
+			return emitEventErr
+		}
 	}
 	return nil
 }
