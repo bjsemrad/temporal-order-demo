@@ -3,6 +3,7 @@ package processing
 import (
 	"fmt"
 	"temporal-order-demo/pkg/order"
+	"temporal-order-demo/pkg/processing/event"
 	pfraud "temporal-order-demo/pkg/processing/fraud"
 	sfraud "temporal-order-demo/pkg/services/fraud"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) {
+func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) { //TODO comeback to the workflow outpu
 
 	retrypolicy := &temporal.RetryPolicy{
 		InitialInterval:    time.Second,
@@ -29,10 +30,7 @@ func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) {
 
 	ctx = workflow.WithActivityOptions(ctx, options)
 
-	var fraudOutput sfraud.FraudDecision
-
-	fraudErr := workflow.ExecuteActivity(ctx, pfraud.CheckOrderFraudulent, input).Get(ctx, &fraudOutput)
-
+	fraudErr := handleFraudCheck(ctx, input)
 	if fraudErr != nil {
 		return "", fraudErr
 	}
@@ -59,8 +57,45 @@ func ProcessOrder(ctx workflow.Context, input order.Order) (string, error) {
 	// 		input.TargetAccount, input.SourceAccount, depositErr)
 	// }
 	//
-	result := fmt.Sprintf("Order Procesing complete for order: %s)", input.OrderNumber)
-	return result, nil
+	// result := fmt.Sprintf("Order Procesing complete for order: %s)", input.OrderNumber)
+	return "", nil
 }
 
-// @@@SNIPEND
+// TODO Turn this into a sub-workflow
+func handleFraudCheck(ctx workflow.Context, input order.Order) error {
+	var fraudEventOutput event.EventEmitOutput
+	//Emit pending fraud review event
+	emitEventErr := workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &fraudEventOutput)
+
+	if emitEventErr != nil {
+		return emitEventErr
+	}
+
+	var fraudOutput sfraud.FraudDecision
+	// Execute Fraud Check
+	fraudErr := workflow.ExecuteActivity(ctx, pfraud.CheckOrderFraudulent, input).Get(ctx, &fraudOutput)
+
+	if fraudErr != nil {
+		return fraudErr
+	}
+
+	var eventOutput event.EventEmitOutput
+
+	if fraudOutput.FraudDetected {
+		//TODO REVISIT THIS AS WE WILL WANT TO DEAL WITH EVENTS DIFFERENTLY
+		//Emit fraud detected event
+		emitEventErr := workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &eventOutput)
+
+		if emitEventErr != nil {
+			return emitEventErr
+		}
+	}
+
+	//Emit Fraud Review Complete
+	emitEventErr = workflow.ExecuteActivity(ctx, event.EmitEvent, input).Get(ctx, &eventOutput)
+
+	if emitEventErr != nil {
+		return emitEventErr
+	}
+	return nil
+}
