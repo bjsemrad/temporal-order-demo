@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 	"temporal-order-demo/pkg/order"
-	"temporal-order-demo/pkg/processing"
-	processorqueue "temporal-order-demo/pkg/queue"
+	orderworkflow "temporal-order-demo/pkg/order-workflow"
+	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -31,12 +31,12 @@ func main() {
 
 	options := client.StartWorkflowOptions{
 		ID:        "submit-order-" + orderNumber + time.Now().String(),
-		TaskQueue: processorqueue.OrderIntakeTaskQueueName,
+		TaskQueue: orderworkflowqueues.OrderIntakeTaskQueueName,
 	}
 
 	log.Printf("Starting order processing for order " + orderNumber)
 
-	we, err := c.ExecuteWorkflow(context.Background(), options, processing.ProcessOrder, input)
+	we, err := c.ExecuteWorkflow(context.Background(), options, orderworkflow.ProcessOrder, input)
 	if err != nil {
 		log.Fatalln("Unable to start the Workflow:", err)
 	}

@@ -1,4 +1,4 @@
-package processorqueue
+package orderworkflowqueues
 
 const OrderIntakeTaskQueueName = "ORDER_SUBMITTED_INTAKE_TASK_QUEUE"
 const EventEmitterTaskQueueName = "ORDER_EVENT_TASK_QUEUE"

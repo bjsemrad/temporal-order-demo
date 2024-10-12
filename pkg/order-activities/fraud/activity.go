@@ -1,4 +1,4 @@
-package fraud
+package fraudactivity
 
 import (
 	"context"

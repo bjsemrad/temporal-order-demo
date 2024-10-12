@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"temporal-order-demo/pkg/processing/event"
-	processorqueue "temporal-order-demo/pkg/queue"
+
+	eventactivity "temporal-order-demo/pkg/order-activities/event"
+	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -17,10 +18,10 @@ func main() {
 	}
 	defer c.Close()
 
-	w := worker.New(c, processorqueue.EventEmitterTaskQueueName, worker.Options{})
+	w := worker.New(c, orderworkflowqueues.EventEmitterTaskQueueName, worker.Options{})
 
 	// This worker hosts both Workflow and Activity functions.
-	w.RegisterActivity(event.EmitEvent)
+	w.RegisterActivity(eventactivity.EmitEvent)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())

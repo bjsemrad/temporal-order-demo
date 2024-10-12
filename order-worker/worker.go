@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"temporal-order-demo/pkg/processing"
-	"temporal-order-demo/pkg/processing/event"
-	"temporal-order-demo/pkg/processing/fraud"
-	processorqueue "temporal-order-demo/pkg/queue"
+	eventactivity "temporal-order-demo/pkg/order-activities/event"
+	fraudactivity "temporal-order-demo/pkg/order-activities/fraud"
+	orderworkflow "temporal-order-demo/pkg/order-workflow"
+	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -18,11 +18,11 @@ func main() {
 	}
 	defer c.Close()
 
-	w := worker.New(c, processorqueue.OrderIntakeTaskQueueName, worker.Options{})
+	w := worker.New(c, orderworkflowqueues.OrderIntakeTaskQueueName, worker.Options{})
 
-	w.RegisterWorkflow(processing.ProcessOrder)
-	w.RegisterActivity(event.EmitEvent)
-	w.RegisterActivity(fraud.CheckOrderFraudulent)
+	w.RegisterWorkflow(orderworkflow.ProcessOrder)
+	w.RegisterActivity(eventactivity.EmitEvent)
+	w.RegisterActivity(fraudactivity.CheckOrderFraudulent)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())

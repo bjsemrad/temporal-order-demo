@@ -1,4 +1,4 @@
-package creditcheck
+package creditreviewactivity
 
 import (
 	"context"
