@@ -1,4 +1,4 @@
-package orderworkflow
+package orderworkflowutils
 
 import (
 	"temporal-order-demo/pkg/order"
