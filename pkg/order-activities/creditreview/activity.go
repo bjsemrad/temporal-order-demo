@@ -4,13 +4,22 @@ import (
 	"context"
 	"log"
 	"temporal-order-demo/pkg/order"
-	"temporal-order-demo/pkg/services/creditcheck"
+	"temporal-order-demo/pkg/services/creditreview"
 )
 
-func SubmitCreditReview(ctx context.Context, data order.Order) (creditcheck.CreditApprovalDecision, error) {
-	log.Printf("Checking available credit on order %s.\n\n", data.OrderNumber)
-	creditClient := creditcheck.InitializeClient()
-	result, err := creditClient.ProcessOrder(data)
-	log.Printf("Credit Review for order %s complete.\n\n", data.OrderNumber)
-	return result, err
+func ValidateAndReserveCredit(ctx context.Context, order *order.Order) (creditreview.CreditReservationResult, error) {
+	log.Printf("Checking available credit on order %s.\n\n", order.OrderNumber)
+	creditClient := creditreview.InitializeClient()
+	creditResult, err := creditClient.ReserveCredit(*order)
+	if err != nil {
+		return creditResult, err
+	}
+	return creditResult, nil
+}
+
+func SubmitCreditReview(ctx context.Context, order *order.Order) error {
+	log.Printf("Checking available credit on order %s.\n\n", order.OrderNumber)
+	creditClient := creditreview.InitializeClient()
+	err := creditClient.InitiateCreditReview(*order)
+	return err
 }

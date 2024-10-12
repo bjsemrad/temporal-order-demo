@@ -1,6 +1,7 @@
 package orderworkflow
 
 import (
+	"strings"
 	"temporal-order-demo/pkg/order"
 	orderworkflowstep "temporal-order-demo/pkg/order-workflow/steps"
 	"time"
@@ -28,13 +29,19 @@ func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error)
 	ctx = workflow.WithActivityOptions(ctx, options)
 
 	fraudErr := orderworkflowstep.DoFraudCheck(ctx, input)
-	//TODO: Credit Review
-	//TODO: Approval
-	//TODO: Operational Rule Checks
-	//TODO: Team Intervention
 	if fraudErr != nil {
 		return *input, fraudErr
 	}
+
+	if strings.Trim(input.Payment.AccountNumber, " ") != "" {
+		creditReviewErr := orderworkflowstep.DoCreditReview(ctx, input)
+		if creditReviewErr != nil {
+			return *input, creditReviewErr
+		}
+	}
+	//TODO: Approval
+	//TODO: Operational Rule Checks
+	//TODO: Team Intervention
 
 	return *input, nil
 }

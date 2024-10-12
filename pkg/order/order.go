@@ -8,6 +8,7 @@ type Order struct {
 	Status      OrderStatus
 	OrderNumber string
 	Lines       []*OrderLine
+	Payment     Payment
 	LastUpdated time.Time
 }
 
@@ -16,6 +17,11 @@ type OrderLine struct {
 	Product    string
 	Quantity   int
 	Price      float64
+}
+
+type Payment struct {
+	CreditCard    string
+	AccountNumber string
 }
 
 func NewOrder(orderNumber string) *Order {
