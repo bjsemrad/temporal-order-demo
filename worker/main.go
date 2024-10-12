@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"temporal-order-demo/pkg/order"
 	"temporal-order-demo/pkg/processing"
 	"temporal-order-demo/pkg/processing/fraud"
+	processorqueue "temporal-order-demo/pkg/queue"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -18,7 +18,7 @@ func main() {
 	}
 	defer c.Close()
 
-	w := worker.New(c, order.OrderIntakeTaskQueueName, worker.Options{})
+	w := worker.New(c, processorqueue.OrderIntakeTaskQueueName, worker.Options{})
 
 	// This worker hosts both Workflow and Activity functions.
 	w.RegisterWorkflow(processing.ProcessOrder)
