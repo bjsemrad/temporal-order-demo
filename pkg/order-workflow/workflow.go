@@ -4,6 +4,7 @@ import (
 	"strings"
 	"temporal-order-demo/pkg/order"
 	orderworkflowstep "temporal-order-demo/pkg/order-workflow/steps"
+	orderworkflowutils "temporal-order-demo/pkg/order-workflow/utils"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -16,14 +17,13 @@ func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error)
 		InitialInterval:    time.Second,
 		BackoffCoefficient: 2.0,
 		MaximumInterval:    120 * time.Second,
-		MaximumAttempts:    500, // 0 is unlimited retries, this will retry if there is no workers as well.
-		// NonRetryableErrorTypes: []string{"TODO"},
+		MaximumAttempts:    0, // 0 is unlimited retries, this will retry if there is no workers as well.
 	}
 
 	options := workflow.ActivityOptions{
 		// Timeout options specify when to automatically timeout Activity functions.
-		StartToCloseTimeout: 3 * time.Minute,
-		RetryPolicy:         retrypolicy,
+		// StartToCloseTimeout: 3 * time.Minute,
+		RetryPolicy: retrypolicy,
 	}
 
 	ctx = workflow.WithActivityOptions(ctx, options)
@@ -33,12 +33,14 @@ func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error)
 		return *input, fraudErr
 	}
 
-	if strings.Trim(input.Payment.AccountNumber, " ") != "" {
+	if input.Payment != nil && strings.Trim(input.Payment.AccountNumber, " ") != "" {
 		creditReviewErr := orderworkflowstep.DoCreditReview(ctx, input)
 		if creditReviewErr != nil {
 			return *input, creditReviewErr
 		}
 	}
+
+	orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
 	//TODO: Approval
 	//TODO: Operational Rule Checks
 	//TODO: Team Intervention

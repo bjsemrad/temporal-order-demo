@@ -10,9 +10,15 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+type FraudDetectedError struct{}
+
+func (m *FraudDetectedError) Error() string {
+	return "Fraud Detected"
+}
+
 // TODO: Turn this into a sub-workflow
 func DoFraudCheck(ctx workflow.Context, input *order.Order) error {
-	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.PendingFraudReview)
+	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.PendingFraudReview, "Begin Fraud Review")
 
 	if eventError != nil {
 		return eventError
@@ -28,17 +34,19 @@ func DoFraudCheck(ctx workflow.Context, input *order.Order) error {
 	if fraudErr != nil {
 		return fraudErr
 	}
-
+	input.RecoardFraudReviewDecision(fraudOutput.FraudDetected, fraudOutput.RejectionReason, fraudOutput.CheckDate)
 	if fraudOutput.FraudDetected {
 		//Emit fraud detected event
-		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.Fraudlent)
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.Fraudlent, "Fraud Detected")
 		if eventError != nil {
 			return eventError
 		}
+
+		return &FraudDetectedError{}
 		//TODO: What do we want to do at this point, cancel or have some intervention
 	} else {
 		//Emit Fraud Review Complete
-		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.NoFraudDetected)
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.NoFraudDetected, "Order deemed not fraudlent")
 
 		if eventError != nil {
 			return eventError

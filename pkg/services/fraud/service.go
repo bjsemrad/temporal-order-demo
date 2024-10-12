@@ -1,6 +1,9 @@
 package fraud
 
-import "temporal-order-demo/pkg/order"
+import (
+	"temporal-order-demo/pkg/order"
+	"time"
+)
 
 type FraudServiceClient struct {
 	//TODO setup credentials to talk to the fraud servicea
@@ -14,6 +17,7 @@ func (c *FraudServiceClient) ValidateOrder(order order.Order) (FraudDecision, er
 	result := FraudDecision{
 		FraudDetected:   false,
 		RejectionReason: "",
+		CheckDate:       time.Now(),
 	}
 	if len(order.Lines) > 5 {
 		result.FraudDetected = true

@@ -1,7 +1,6 @@
 package creditreview
 
 import (
-	"strings"
 	"temporal-order-demo/pkg/order"
 )
 
@@ -24,7 +23,7 @@ type CreditReservationResult struct {
 }
 
 func (c *CreditReviewClient) ReserveCredit(order order.Order) (CreditReservationResult, error) {
-	if strings.HasPrefix(order.Payment.AccountNumber, "999") {
+	if order.Total() > 100 {
 		return CreditReservationResult{
 			CreditReserved:  false,
 			AvailableCredit: 100.00,

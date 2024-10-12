@@ -17,4 +17,6 @@ const (
 	Approved         OrderStatus = "approved"
 	Rejected         OrderStatus = "rejected"
 	Canceled         OrderStatus = "canceled"
+
+	ReadyForFullfilment OrderStatus = "ready-for-fulfillment"
 )

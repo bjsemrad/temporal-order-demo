@@ -26,9 +26,9 @@ type Payment struct {
 }
 
 type OrderPipelineMetadata struct {
-	FraudReview   OrderFraudReview
-	CreditReview  OrderCreditReview
-	StatusHistory []*OrderStatusHistory
+	FraudReview   *OrderFraudReview     `json:"FraudReview,omitempty"`
+	CreditReview  *OrderCreditReview    `json:"CreditReview,omitempty"`
+	StatusHistory []*OrderStatusHistory `json:"StatusHistory,omitempty"`
 }
 
 type OrderStatusHistory struct {
@@ -43,21 +43,20 @@ type OrderFraudReview struct {
 }
 
 type OrderCreditReview struct {
-	CreditAvailable bool
-	AvailableCredit float64
-	CreditDecision  string
-	Reviewier       string
-	DecisionDate    time.Time
+	CreditAvailable bool      `json:"CreditAvailable,omitempty"`
+	AvailableCredit float64   `json:"AvailableCredit,omitempty"`
+	NewLimit        float64   `json:"NewLimit,omitempty"`
+	CreditDecision  string    `json:"CreditDecision,omitempty"`
+	Reviewier       string    `json:"Reviewer,omitempty"`
+	DecisionDate    time.Time `json:"DecisionDate,omitempty"`
 }
 
 func NewOrder(orderNumber string) *Order {
 	return &Order{
-		OrderNumber: orderNumber,
-		Lines:       []*OrderLine{},
-		Payment:     &Payment{},
-		PipelineMetadata: &OrderPipelineMetadata{
-			StatusHistory: make([]*OrderStatusHistory, 0),
-		},
+		OrderNumber:      orderNumber,
+		Lines:            []*OrderLine{},
+		Payment:          &Payment{},
+		PipelineMetadata: &OrderPipelineMetadata{},
 	}
 }
 
@@ -80,25 +79,40 @@ func (o *Order) UpdateStatus(newStatus OrderStatus, reason string) {
 func (o *Order) Total() float64 {
 	total := 0.0
 	for _, line := range o.Lines {
-		total += line.Price
+		total += line.Price * float64(line.Quantity)
 	}
 	return total
 }
 
 func (o *Order) RecordCreditReservation(creditAvailable bool, availableCredit float64) {
 	o.ensureMetadataInitalized()
-	o.PipelineMetadata.CreditReview.CreditAvailable = creditAvailable
-	o.PipelineMetadata.CreditReview.AvailableCredit = availableCredit
+	o.PipelineMetadata.CreditReview = &OrderCreditReview{
+		CreditAvailable: creditAvailable,
+		AvailableCredit: availableCredit,
+	}
 }
 
-func (o *Order) RecordCreditReviewDecision(decision string, reviewer string, reviewDate time.Time) {
+func (o *Order) RecordCreditReviewDecision(decision string, reviewer string, newLimit float64, reviewDate time.Time) {
 	o.ensureMetadataInitalized()
-	o.PipelineMetadata.CreditReview.CreditDecision = decision
-	o.PipelineMetadata.CreditReview.Reviewier = reviewer
-	o.PipelineMetadata.CreditReview.DecisionDate = reviewDate
+	o.PipelineMetadata.CreditReview = &OrderCreditReview{
+		CreditDecision: decision,
+		Reviewier:      reviewer,
+		DecisionDate:   reviewDate,
+		NewLimit:       newLimit,
+	}
+}
+
+func (o *Order) RecoardFraudReviewDecision(fradulent bool, reason string, reviewDate time.Time) {
+	o.ensureMetadataInitalized()
+	o.PipelineMetadata.FraudReview = &OrderFraudReview{
+		FraudDetected:   fradulent,
+		RejectionReason: reason,
+		DecisionDate:    reviewDate,
+	}
 }
 
 func (o *Order) recordStatusChange(status OrderStatus, statusDate time.Time) {
+	o.ensureMetadataInitalized()
 	o.PipelineMetadata.StatusHistory = append(o.PipelineMetadata.StatusHistory, &OrderStatusHistory{status, statusDate})
 }
 
