@@ -19,7 +19,7 @@ func main() {
 
 	defer c.Close()
 	orderNumber := "85150787987" //999
-	runID := "5eae3f2f-21ee-4e65-8e68-34be42d3d5ba"
+	runID := "c4b74cec-8858-4f9e-b64f-08a87cd0da0d"
 	log.Printf("Sending Signal for Order order " + orderNumber + " run id " + runID)
 
 	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.CreditReviewDecisionChannel, &orderworkflowstep.CreditReviewDecisionSignal{

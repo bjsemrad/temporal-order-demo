@@ -57,11 +57,11 @@ func main() {
 
 	var result order.Order
 
-	// err = we.Get(context.Background(), &result)
-	//
-	// if err != nil {
-	// 	log.Fatalln("Unable to get Workflow result:", err)
-	// }
+	err = we.Get(context.Background(), &result)
+
+	if err != nil {
+		log.Fatalln("Unable to get Workflow result:", err)
+	}
 
 	log.Println(result)
 }

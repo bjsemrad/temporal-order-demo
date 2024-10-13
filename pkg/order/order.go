@@ -34,6 +34,7 @@ type OrderPipelineMetadata struct {
 
 type OrderStatusHistory struct {
 	Status OrderStatus
+	Reason string
 	Date   time.Time
 }
 
@@ -72,7 +73,7 @@ func (o *Order) AddLine(lineNumber int, product string, quantity int, price floa
 }
 
 func (o *Order) UpdateStatus(newStatus OrderStatus, reason string) {
-	o.recordStatusChange(o.Status, o.LastUpdated)
+	o.recordStatusChange(o.Status, reason, o.LastUpdated)
 	o.Status = newStatus
 	o.LastUpdated = time.Now()
 }
@@ -112,9 +113,13 @@ func (o *Order) RecoardFraudReviewDecision(fradulent bool, reason string, review
 	}
 }
 
-func (o *Order) recordStatusChange(status OrderStatus, statusDate time.Time) {
+func (o *Order) recordStatusChange(status OrderStatus, reason string, statusDate time.Time) {
 	o.ensureMetadataInitalized()
-	o.PipelineMetadata.StatusHistory = append(o.PipelineMetadata.StatusHistory, &OrderStatusHistory{status, statusDate})
+	o.PipelineMetadata.StatusHistory = append(o.PipelineMetadata.StatusHistory, &OrderStatusHistory{
+		Status: status,
+		Reason: reason,
+		Date:   statusDate,
+	})
 }
 
 func (o *Order) ensureMetadataInitalized() {

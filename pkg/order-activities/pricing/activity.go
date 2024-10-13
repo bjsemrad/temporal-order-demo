@@ -1,14 +1,13 @@
 package pricingactivity
 
 import (
+	"context"
 	"log"
 	"temporal-order-demo/pkg/order"
 	"temporal-order-demo/pkg/services/pricing"
-
-	"go.temporal.io/sdk/workflow"
 )
 
-func PriceOrder(ctx workflow.Context, order *order.Order) (pricing.OrderLinePricing, error) {
+func PriceOrder(ctx context.Context, order *order.Order) (pricing.OrderLinePricing, error) {
 	log.Printf("Pricing order %s.\n\n", order.OrderNumber)
 	pricingClient := pricing.InitializeClient()
 	result, err := pricingClient.PriceOrder(order)
