@@ -22,7 +22,9 @@ func ProcessOrder(ctx workflow.Context, order *order.Order) (order.Order, error)
 		return *order, fraudErr
 	}
 
-	//TODO: Approval
+	//TODO: Validate Business Rules
+
+	//TODO: Cust Approval
 
 	if order.Payment != nil && strings.Trim(order.Payment.AccountNumber, " ") != "" {
 		creditReviewErr := orderworkflowstep.StartCreditReview(ctx, order)
@@ -31,6 +33,9 @@ func ProcessOrder(ctx workflow.Context, order *order.Order) (order.Order, error)
 			return *order, creditReviewErr
 		}
 	}
+
+	//TODO: Apply Settings
+
 	//TODO: Operational Rule Checks
 
 	//TODO: Team Intervention
