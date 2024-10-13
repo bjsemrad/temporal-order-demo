@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type FraudDecision struct {
+	FraudDetected   bool
+	RejectionReason string
+	CheckDate       time.Time
+}
 type FraudServiceClient struct {
 	//TODO setup credentials to talk to the fraud servicea
 }

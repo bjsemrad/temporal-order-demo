@@ -11,36 +11,38 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
+func ProcessOrder(ctx workflow.Context, order *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
 	ctx = setupDefaultContext(ctx)
 
-	fraudErr := orderworkflowstep.StartFraudCheck(ctx, input)
+	orderworkflowstep.EnsureOrderIsPriced(ctx, order)
+
+	fraudErr := orderworkflowstep.StartFraudCheck(ctx, order)
 	var fraudDetectedError *orderworkflowstep.FraudDetectedError
 	if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
-		return *input, fraudErr
+		return *order, fraudErr
 	}
 
 	//TODO: Approval
 
-	if input.Payment != nil && strings.Trim(input.Payment.AccountNumber, " ") != "" {
-		creditReviewErr := orderworkflowstep.StartCreditReview(ctx, input)
+	if order.Payment != nil && strings.Trim(order.Payment.AccountNumber, " ") != "" {
+		creditReviewErr := orderworkflowstep.StartCreditReview(ctx, order)
 		var creditDeniedError *orderworkflowstep.CreditDeniedError
 		if creditReviewErr != nil && !errors.As(creditReviewErr, &creditDeniedError) {
-			return *input, creditReviewErr
+			return *order, creditReviewErr
 		}
 	}
 	//TODO: Operational Rule Checks
 
 	//TODO: Team Intervention
 
-	fulfillError := orderworkflowstep.PrepareOrderForFulfillment(ctx, input)
+	fulfillError := orderworkflowstep.PrepareOrderForFulfillment(ctx, order)
 	if fulfillError != nil {
-		return *input, fulfillError
+		return *order, fulfillError
 	}
 
-	orderworkflowstep.WaitForConfirmedOrder(ctx, input)
+	orderworkflowstep.WaitForConfirmedOrder(ctx, order)
 
-	return *input, nil
+	return *order, nil
 }
 
 func setupDefaultContext(ctx workflow.Context) workflow.Context {
