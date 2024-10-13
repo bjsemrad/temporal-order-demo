@@ -5,7 +5,6 @@ import (
 	"strings"
 	"temporal-order-demo/pkg/order"
 	orderworkflowstep "temporal-order-demo/pkg/order-workflow/steps"
-	orderworkflowutils "temporal-order-demo/pkg/order-workflow/utils"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -13,7 +12,38 @@ import (
 )
 
 func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error) { //TODO comeback to the workflow outpu
+	ctx = setupDefaultContext(ctx)
 
+	fraudErr := orderworkflowstep.StartFraudCheck(ctx, input)
+	var fraudDetectedError *orderworkflowstep.FraudDetectedError
+	if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
+		return *input, fraudErr
+	}
+
+	//TODO: Approval
+
+	if input.Payment != nil && strings.Trim(input.Payment.AccountNumber, " ") != "" {
+		creditReviewErr := orderworkflowstep.StartCreditReview(ctx, input)
+		var creditDeniedError *orderworkflowstep.CreditDeniedError
+		if creditReviewErr != nil && !errors.As(creditReviewErr, &creditDeniedError) {
+			return *input, creditReviewErr
+		}
+	}
+	//TODO: Operational Rule Checks
+
+	//TODO: Team Intervention
+
+	fulfillError := orderworkflowstep.PrepareOrderForFulfillment(ctx, input)
+	if fulfillError != nil {
+		return *input, fulfillError
+	}
+
+	orderworkflowstep.WaitForConfirmedOrder(ctx, input)
+
+	return *input, nil
+}
+
+func setupDefaultContext(ctx workflow.Context) workflow.Context {
 	retrypolicy := &temporal.RetryPolicy{
 		InitialInterval:    time.Second,
 		BackoffCoefficient: 2.0,
@@ -27,29 +57,5 @@ func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error)
 		RetryPolicy:         retrypolicy,
 	}
 
-	ctx = workflow.WithActivityOptions(ctx, options)
-
-	fraudErr := orderworkflowstep.DoFraudCheck(ctx, input)
-	var fraudDetectedError *orderworkflowstep.FraudDetectedError
-	if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
-		return *input, fraudErr
-	}
-
-	if input.Payment != nil && strings.Trim(input.Payment.AccountNumber, " ") != "" {
-		creditReviewErr := orderworkflowstep.DoCreditReview(ctx, input)
-		var creditDeniedError *orderworkflowstep.CreditDeniedError
-		if creditReviewErr != nil && !errors.As(creditReviewErr, &creditDeniedError) {
-			return *input, creditReviewErr
-		}
-	}
-
-	//IF we are not in a terminal status send the fulfillment signal
-	if !order.TerminalOrderStatus(input.Status) {
-		orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
-	}
-	//TODO: Approval
-	//TODO: Operational Rule Checks
-	//TODO: Team Intervention
-
-	return *input, nil
+	return workflow.WithActivityOptions(ctx, options)
 }

@@ -5,12 +5,13 @@ import (
 )
 
 type Order struct {
-	Status           OrderStatus
-	OrderNumber      string
-	Lines            []*OrderLine
-	Payment          *Payment
-	LastUpdated      time.Time
-	PipelineMetadata *OrderPipelineMetadata
+	Status                 OrderStatus
+	OrderNumber            string
+	FullfilmentOrderNumber string
+	Lines                  []*OrderLine
+	Payment                *Payment
+	LastUpdated            time.Time
+	PipelineMetadata       *OrderPipelineMetadata
 }
 
 type OrderLine struct {

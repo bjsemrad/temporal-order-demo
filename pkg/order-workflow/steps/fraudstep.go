@@ -17,7 +17,7 @@ func (m *FraudDetectedError) Error() string {
 }
 
 // TODO: Turn this into a sub-workflow
-func DoFraudCheck(ctx workflow.Context, input *order.Order) error {
+func StartFraudCheck(ctx workflow.Context, input *order.Order) error {
 	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.PendingFraudReview, "Begin Fraud Review")
 
 	if eventError != nil {

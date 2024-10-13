@@ -22,7 +22,6 @@ const (
 )
 
 type CreditReviewDecisionSignal struct {
-	OrderNumber    string
 	CreditDecision CreditReviewDecision
 	Reviewier      string
 	NewLimit       float64
@@ -36,18 +35,8 @@ func (m *CreditDeniedError) Error() string {
 }
 
 // TODO: Turn this into a sub-workflow
-func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
-	var creditReservation creditreview.CreditReservationResult
-	// Execute Fraud Check
-	options := workflow.ActivityOptions{
-		StartToCloseTimeout: 5 * time.Minute,
-	}
-	ctx = workflow.WithActivityOptions(ctx, options)
-	creditReviewErr := workflow.ExecuteActivity(
-		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
-		creditreviewactivity.ValidateAndReserveCredit,
-		custOrder).Get(ctx, &creditReservation)
-
+func StartCreditReview(ctx workflow.Context, custOrder *order.Order) error {
+	creditReservation, creditReviewErr := startValidateAndReserveActivity(ctx, custOrder)
 	if creditReviewErr != nil {
 		return creditReviewErr
 	}
@@ -60,16 +49,7 @@ func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 			return eventError
 		}
 
-		options := workflow.ActivityOptions{
-			StartToCloseTimeout: 5 * time.Minute,
-		}
-		ctx = workflow.WithActivityOptions(ctx, options)
-
-		creditReviewErr := workflow.ExecuteActivity(
-			workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
-			creditreviewactivity.SubmitCreditReview,
-			custOrder).Get(ctx, nil)
-
+		creditReviewErr := startCreditReviewActivity(ctx, custOrder)
 		if creditReviewErr != nil {
 			return creditReviewErr
 		}
@@ -86,19 +66,50 @@ func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 				return eventError
 			}
 		} else {
-			eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.CreditReviewDenied, "Credit Increase Denied")
-			if eventError != nil {
-				return eventError
-			}
-
-			eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.Canceled, "Not enough credit canceling order")
-			if eventError != nil {
-				return eventError
-			}
-
-			return &CreditDeniedError{}
+			return processCreditDenied(ctx, custOrder)
 		}
 	}
 
 	return nil
+}
+
+func processCreditDenied(ctx workflow.Context, custOrder *order.Order) error {
+	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.CreditReviewDenied, "Credit Increase Denied")
+	if eventError != nil {
+		return eventError
+	}
+
+	eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.Canceled, "Not enough credit canceling order")
+	if eventError != nil {
+		return eventError
+	}
+
+	return &CreditDeniedError{}
+}
+
+func startValidateAndReserveActivity(ctx workflow.Context, custOrder *order.Order) (creditreview.CreditReservationResult, error) {
+	var creditReservation creditreview.CreditReservationResult
+
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Minute,
+	}
+	ctx = workflow.WithActivityOptions(ctx, options)
+	creditReviewErr := workflow.ExecuteActivity(
+		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
+		creditreviewactivity.ValidateAndReserveCredit,
+		custOrder).Get(ctx, &creditReservation)
+	return creditReservation, creditReviewErr
+}
+
+func startCreditReviewActivity(ctx workflow.Context, custOrder *order.Order) error {
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Minute,
+	}
+	ctx = workflow.WithActivityOptions(ctx, options)
+
+	creditReviewErr := workflow.ExecuteActivity(
+		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
+		creditreviewactivity.SubmitCreditReview,
+		custOrder).Get(ctx, nil)
+	return creditReviewErr
 }

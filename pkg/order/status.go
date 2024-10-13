@@ -13,12 +13,13 @@ const (
 	CreditReviewApproved OrderStatus = "credit-review-approved"
 	CreditReviewDenied   OrderStatus = "credit-review-denied"
 
-	ApprovalRequired OrderStatus = "approvalrequired"
+	ApprovalRequired OrderStatus = "approval-required"
 	Approved         OrderStatus = "approved"
 	Rejected         OrderStatus = "rejected"
 	Canceled         OrderStatus = "canceled"
 
-	ReadyForFullfilment OrderStatus = "ready-for-fulfillment"
+	ReadyForFullfilment  OrderStatus = "ready-for-fulfillment"
+	FullfilmentConfirmed OrderStatus = "fulfillment-confirmed"
 )
 
 func TerminalOrderStatus(status OrderStatus) bool {
