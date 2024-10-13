@@ -23,7 +23,6 @@ func main() {
 	log.Printf("Sending Signal for Order order " + orderNumber + " run id " + runID)
 
 	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.CreditReviewDecisionChannel, &orderworkflowstep.CreditReviewDecisionSignal{
-		OrderNumber:    orderNumber,
 		CreditDecision: orderworkflowstep.CreditExtensionDenied,
 		Reviewier:      "xsed241",
 		DecisionDate:   time.Now(),

@@ -35,6 +35,6 @@ func (c *CreditReviewClient) ReserveCredit(order order.Order) (CreditReservation
 	}, nil
 }
 
-func (c *CreditReviewClient) InitiateCreditReview(order order.Order) error {
+func (c *CreditReviewClient) InitiateCreditReview(workflowId string, runId string, order order.Order) error {
 	return nil
 }

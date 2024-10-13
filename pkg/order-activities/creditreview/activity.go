@@ -1,13 +1,14 @@
 package creditreviewactivity
 
 import (
-	"context"
 	"log"
 	"temporal-order-demo/pkg/order"
 	"temporal-order-demo/pkg/services/creditreview"
+
+	"go.temporal.io/sdk/workflow"
 )
 
-func ValidateAndReserveCredit(ctx context.Context, order *order.Order) (creditreview.CreditReservationResult, error) {
+func ValidateAndReserveCredit(ctx workflow.Context, order *order.Order) (creditreview.CreditReservationResult, error) {
 	log.Printf("Checking available credit on order %s.\n\n", order.OrderNumber)
 	creditClient := creditreview.InitializeClient()
 	creditResult, err := creditClient.ReserveCredit(*order)
@@ -17,9 +18,11 @@ func ValidateAndReserveCredit(ctx context.Context, order *order.Order) (creditre
 	return creditResult, nil
 }
 
-func SubmitCreditReview(ctx context.Context, order *order.Order) error {
+func SubmitCreditReview(ctx workflow.Context, order *order.Order) error {
 	log.Printf("Checking available credit on order %s.\n\n", order.OrderNumber)
 	creditClient := creditreview.InitializeClient()
-	err := creditClient.InitiateCreditReview(*order)
+	wfID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	runID := workflow.GetInfo(ctx).WorkflowExecution.RunID
+	err := creditClient.InitiateCreditReview(wfID, runID, *order)
 	return err
 }

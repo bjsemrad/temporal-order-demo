@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	orderworkflowstep "temporal-order-demo/pkg/order-workflow/steps"
-	"time"
 
 	"go.temporal.io/sdk/client"
 )
@@ -19,14 +18,11 @@ func main() {
 
 	defer c.Close()
 	orderNumber := "85150787987" //999
-	runID := "5eae3f2f-21ee-4e65-8e68-34be42d3d5ba"
+	runID := "cc91e9ab-4076-4905-8bfb-3a0350dcfe09"
 	log.Printf("Sending Signal for Order order " + orderNumber + " run id " + runID)
 
-	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.CreditReviewDecisionChannel, &orderworkflowstep.CreditReviewDecisionSignal{
-		CreditDecision: orderworkflowstep.CreditExtended,
-		Reviewier:      "xsed241",
-		NewLimit:       100000.00,
-		DecisionDate:   time.Now(),
+	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.OrderFulfillmentConfirmedChannel, &orderworkflowstep.OrderConfirmedSignal{
+		FulfillmentOrderNumber: "879879879879",
 	})
 
 	if err != nil {

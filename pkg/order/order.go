@@ -7,7 +7,7 @@ import (
 type Order struct {
 	Status                 OrderStatus
 	OrderNumber            string
-	FullfilmentOrderNumber string
+	FullfilmentOrderNumber string `json:"FullfilmentOrderNumber,omitempty"`
 	Lines                  []*OrderLine
 	Payment                *Payment
 	LastUpdated            time.Time
@@ -22,8 +22,8 @@ type OrderLine struct {
 }
 
 type Payment struct {
-	CreditCard    string
-	AccountNumber string
+	CreditCard    string `json:"CreditCard,omitempty"`
+	AccountNumber string `json:"AccountNumber,omitempty"`
 }
 
 type OrderPipelineMetadata struct {

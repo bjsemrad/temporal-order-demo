@@ -18,7 +18,7 @@ func EmitOrderStatusEvent(ctx workflow.Context, order *order.Order, status order
 	order.UpdateStatus(status, reason)
 	emitEventErr := workflow.ExecuteActivity(
 		workflow.WithTaskQueue(ctx, orderworkflowqueues.EventEmitterTaskQueueName),
-		eventactivity.EmitEvent,
+		eventactivity.EmitStatusUpdateEvent,
 		order).Get(ctx, nil)
 
 	if emitEventErr != nil {

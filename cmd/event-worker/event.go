@@ -21,7 +21,7 @@ func main() {
 	w := worker.New(c, orderworkflowqueues.EventEmitterTaskQueueName, worker.Options{})
 
 	// This worker hosts both Workflow and Activity functions.
-	w.RegisterActivity(eventactivity.EmitEvent)
+	w.RegisterActivity(eventactivity.EmitStatusUpdateEvent)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())

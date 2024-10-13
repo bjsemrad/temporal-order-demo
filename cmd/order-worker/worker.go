@@ -22,10 +22,11 @@ func main() {
 	w := worker.New(c, orderworkflowqueues.OrderIntakeTaskQueueName, worker.Options{})
 
 	w.RegisterWorkflow(orderworkflow.ProcessOrder)
-	w.RegisterActivity(eventactivity.EmitEvent)
+	w.RegisterActivity(eventactivity.EmitStatusUpdateEvent)
 	w.RegisterActivity(fraudactivity.CheckOrderFraudulent)
 	w.RegisterActivity(creditreviewactivity.ValidateAndReserveCredit)
 	w.RegisterActivity(creditreviewactivity.SubmitCreditReview)
+	w.RegisterActivity(eventactivity.EmitFullfilmentEvent)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())
