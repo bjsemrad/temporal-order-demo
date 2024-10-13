@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	creditreviewactivity "temporal-order-demo/pkg/order-activities/creditreview"
 	eventactivity "temporal-order-demo/pkg/order-activities/event"
 	fraudactivity "temporal-order-demo/pkg/order-activities/fraud"
 	orderworkflow "temporal-order-demo/pkg/order-workflow"
@@ -23,6 +24,8 @@ func main() {
 	w.RegisterWorkflow(orderworkflow.ProcessOrder)
 	w.RegisterActivity(eventactivity.EmitEvent)
 	w.RegisterActivity(fraudactivity.CheckOrderFraudulent)
+	w.RegisterActivity(creditreviewactivity.ValidateAndReserveCredit)
+	w.RegisterActivity(creditreviewactivity.SubmitCreditReview)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())

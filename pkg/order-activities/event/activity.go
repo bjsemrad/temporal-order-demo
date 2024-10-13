@@ -12,7 +12,7 @@ type EventEmitOutput struct {
 }
 
 func EmitEvent(ctx context.Context, data order.Order) (EventEmitOutput, error) {
-	log.Printf("Emitting Order Update Event. %s \n", data.OrderNumber)
+	log.Printf("Emitting Order %s Update Status: %s Event. \n\n", data.OrderNumber, data.Status)
 	result := EventEmitOutput{Success: true, Order: data}
 	return result, nil
 }

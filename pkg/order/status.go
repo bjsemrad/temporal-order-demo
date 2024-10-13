@@ -20,3 +20,12 @@ const (
 
 	ReadyForFullfilment OrderStatus = "ready-for-fulfillment"
 )
+
+func TerminalOrderStatus(status OrderStatus) bool {
+	switch status {
+	case Fraudlent, CreditReviewDenied, Rejected, Canceled:
+		return true
+	default:
+		return false
+	}
+}

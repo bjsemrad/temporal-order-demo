@@ -1,6 +1,7 @@
 package orderworkflow
 
 import (
+	"errors"
 	"strings"
 	"temporal-order-demo/pkg/order"
 	orderworkflowstep "temporal-order-demo/pkg/order-workflow/steps"
@@ -22,25 +23,30 @@ func ProcessOrder(ctx workflow.Context, input *order.Order) (order.Order, error)
 
 	options := workflow.ActivityOptions{
 		// Timeout options specify when to automatically timeout Activity functions.
-		// StartToCloseTimeout: 3 * time.Minute,
-		RetryPolicy: retrypolicy,
+		StartToCloseTimeout: 5 * time.Minute,
+		RetryPolicy:         retrypolicy,
 	}
 
 	ctx = workflow.WithActivityOptions(ctx, options)
 
 	fraudErr := orderworkflowstep.DoFraudCheck(ctx, input)
-	if fraudErr != nil {
+	var fraudDetectedError *orderworkflowstep.FraudDetectedError
+	if fraudErr != nil && !errors.As(fraudErr, &fraudDetectedError) {
 		return *input, fraudErr
 	}
 
 	if input.Payment != nil && strings.Trim(input.Payment.AccountNumber, " ") != "" {
 		creditReviewErr := orderworkflowstep.DoCreditReview(ctx, input)
-		if creditReviewErr != nil {
+		var creditDeniedError *orderworkflowstep.CreditDeniedError
+		if creditReviewErr != nil && !errors.As(creditReviewErr, &creditDeniedError) {
 			return *input, creditReviewErr
 		}
 	}
 
-	orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
+	//IF we are not in a terminal status send the fulfillment signal
+	if !order.TerminalOrderStatus(input.Status) {
+		orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
+	}
 	//TODO: Approval
 	//TODO: Operational Rule Checks
 	//TODO: Team Intervention

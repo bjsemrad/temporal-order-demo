@@ -29,10 +29,20 @@ type CreditReviewDecisionSignal struct {
 	DecisionDate   time.Time
 }
 
+type CreditDeniedError struct{}
+
+func (m *CreditDeniedError) Error() string {
+	return "Credit Extension Declined"
+}
+
 // TODO: Turn this into a sub-workflow
 func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 	var creditReservation creditreview.CreditReservationResult
 	// Execute Fraud Check
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout: 5 * time.Minute,
+	}
+	ctx = workflow.WithActivityOptions(ctx, options)
 	creditReviewErr := workflow.ExecuteActivity(
 		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
 		creditreviewactivity.ValidateAndReserveCredit,
@@ -49,6 +59,11 @@ func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 		if eventError != nil {
 			return eventError
 		}
+
+		options := workflow.ActivityOptions{
+			StartToCloseTimeout: 5 * time.Minute,
+		}
+		ctx = workflow.WithActivityOptions(ctx, options)
 
 		creditReviewErr := workflow.ExecuteActivity(
 			workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
@@ -80,6 +95,8 @@ func DoCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 			if eventError != nil {
 				return eventError
 			}
+
+			return &CreditDeniedError{}
 		}
 	}
 

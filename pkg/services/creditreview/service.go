@@ -23,7 +23,7 @@ type CreditReservationResult struct {
 }
 
 func (c *CreditReviewClient) ReserveCredit(order order.Order) (CreditReservationResult, error) {
-	if order.Total() > 100 {
+	if order.Total() > 4000 {
 		return CreditReservationResult{
 			CreditReserved:  false,
 			AvailableCredit: 100.00,
