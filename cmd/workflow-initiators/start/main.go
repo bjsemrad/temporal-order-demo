@@ -8,6 +8,7 @@ import (
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 	"time"
 
+	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -39,8 +40,10 @@ func main() {
 	}
 
 	options := client.StartWorkflowOptions{
-		ID:        "order-submitted-" + orderNumber,
-		TaskQueue: orderworkflowqueues.OrderIntakeTaskQueueName,
+		ID:                    "order-submitted-" + orderNumber,
+		TaskQueue:             orderworkflowqueues.OrderIntakeTaskQueueName,
+		WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
+
 		// RetryPolicy: &temporal.RetryPolicy{
 		// 	NonRetryableErrorTypes: []string{"FraudDetectedError", "CreditDeniedError"},
 		// },

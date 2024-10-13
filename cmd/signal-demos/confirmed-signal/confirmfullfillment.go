@@ -18,7 +18,7 @@ func main() {
 
 	defer c.Close()
 	orderNumber := "85150787987" //999
-	runID := "c4b74cec-8858-4f9e-b64f-08a87cd0da0d"
+	runID := "49a400f4-585a-4515-ba3f-6abb72c08510"
 	log.Printf("Sending Signal for Order order " + orderNumber + " run id " + runID)
 
 	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.OrderFulfillmentConfirmedChannel, &orderworkflowstep.OrderConfirmedSignal{
