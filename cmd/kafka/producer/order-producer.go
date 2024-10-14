@@ -36,7 +36,12 @@ func main() {
 	topic := "OrderSubmitted"
 	for i := 0; i < 20; i++ {
 		orderNumber := strconv.FormatInt(rand.Int63n(9223372036854775807), 10)
+		var channel = "gcom"
+		if i%2 == 0 {
+			channel = "custservice"
+		}
 		input := &order.Order{
+			Channel:     channel,
 			OrderNumber: orderNumber,
 			Status:      order.Submitted,
 			LastUpdated: time.Now(),

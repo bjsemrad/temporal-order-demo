@@ -66,7 +66,7 @@ func main() {
 
 func startWorkflow(c client.Client, order *order.Order) error {
 	options := client.StartWorkflowOptions{
-		ID:                    "order-submitted-" + order.OrderNumber,
+		ID:                    "order-" + order.Channel + "-" + order.OrderNumber,
 		TaskQueue:             orderworkflowqueues.OrderIntakeTaskQueueName,
 		WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
 	}

@@ -5,6 +5,7 @@ import (
 )
 
 type Order struct {
+	Channel                string
 	Status                 OrderStatus
 	OrderNumber            string
 	FullfilmentOrderNumber string `json:"FullfilmentOrderNumber,omitempty"`

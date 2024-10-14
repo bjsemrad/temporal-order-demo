@@ -94,9 +94,10 @@ func startValidateAndReserveActivity(ctx workflow.Context, custOrder *order.Orde
 		StartToCloseTimeout: 5 * time.Minute,
 	}
 	ctx = workflow.WithActivityOptions(ctx, options)
+	var creditActivity *creditreviewactivity.CreditActivity
 	creditReviewErr := workflow.ExecuteActivity(
 		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
-		creditreviewactivity.ValidateAndReserveCredit,
+		creditActivity.ValidateAndReserveCredit,
 		custOrder).Get(ctx, &creditReservation)
 	return creditReservation, creditReviewErr
 }
@@ -107,9 +108,13 @@ func startCreditReviewActivity(ctx workflow.Context, custOrder *order.Order) err
 	}
 	ctx = workflow.WithActivityOptions(ctx, options)
 
+	wfID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	runID := workflow.GetInfo(ctx).WorkflowExecution.RunID
+
+	var creditActivity *creditreviewactivity.CreditActivity
 	creditReviewErr := workflow.ExecuteActivity(
 		workflow.WithTaskQueue(ctx, orderworkflowqueues.CreditReviewTaskQueueName),
-		creditreviewactivity.SubmitCreditReview,
-		custOrder).Get(ctx, nil)
+		creditActivity.SubmitCreditReview,
+		custOrder, wfID, runID).Get(ctx, nil)
 	return creditReviewErr
 }

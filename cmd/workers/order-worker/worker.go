@@ -23,10 +23,10 @@ func main() {
 
 	w.RegisterWorkflow(orderworkflow.ProcessOrder)
 	var eventActivity *eventactivity.EventBroker
+	var creditActivity *creditreviewactivity.CreditActivity
 	w.RegisterActivity(eventActivity)
 	w.RegisterActivity(fraudactivity.CheckOrderFraudulent)
-	w.RegisterActivity(creditreviewactivity.ValidateAndReserveCredit)
-	w.RegisterActivity(creditreviewactivity.SubmitCreditReview)
+	w.RegisterActivity(creditActivity)
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())
