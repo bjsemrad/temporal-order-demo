@@ -6,6 +6,7 @@ import (
 	eventactivity "temporal-order-demo/pkg/order-activities/event"
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
@@ -20,8 +21,14 @@ func main() {
 
 	w := worker.New(c, orderworkflowqueues.EventEmitterTaskQueueName, worker.Options{})
 
+	kafkaProducer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
+	if err != nil {
+		panic(err)
+	}
+	defer kafkaProducer.Close()
+
 	// This worker hosts both Workflow and Activity functions.
-	w.RegisterActivity(eventactivity.EmitStatusUpdateEvent)
+	w.RegisterActivity(&eventactivity.EventBroker{KafkaProducer: kafkaProducer})
 
 	// Start listening to the Task Queue.
 	err = w.Run(worker.InterruptCh())

@@ -13,27 +13,32 @@ import (
 func PrepareOrderForFulfillment(ctx workflow.Context, custOrder *order.Order) error {
 	//IF we are not in a terminal status send the fulfillment signal
 	if !order.TerminalOrderStatus(custOrder.Status) {
-		return orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
-	}
+		err := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.ReadyForFullfilment, "Processing Complete, Ready to Fulfill")
 
-	//TODO: Send Out 2nd Event
-	wfID := workflow.GetInfo(ctx).WorkflowExecution.ID
-	runID := workflow.GetInfo(ctx).WorkflowExecution.RunID
+		if err != nil {
+			return err
+		}
 
-	options := workflow.ActivityOptions{
-		StartToCloseTimeout: 5 * time.Minute,
-	}
-	ctx = workflow.WithActivityOptions(ctx, options)
+		//TODO: Send Out 2nd Event
+		wfID := workflow.GetInfo(ctx).WorkflowExecution.ID
+		runID := workflow.GetInfo(ctx).WorkflowExecution.RunID
 
-	emitEventErr := workflow.ExecuteActivity(
-		workflow.WithTaskQueue(ctx, orderworkflowqueues.EventEmitterTaskQueueName),
-		eventactivity.EmitFullfilmentEvent,
-		wfID,
-		runID,
-		custOrder).Get(ctx, nil)
+		options := workflow.ActivityOptions{
+			StartToCloseTimeout: 5 * time.Minute,
+		}
+		ctx = workflow.WithActivityOptions(ctx, options)
 
-	if emitEventErr != nil {
-		return emitEventErr
+		var eb *eventactivity.EventBroker
+		emitEventErr := workflow.ExecuteActivity(
+			workflow.WithTaskQueue(ctx, orderworkflowqueues.EventEmitterTaskQueueName),
+			eb.EmitFullfilmentEvent,
+			wfID,
+			runID,
+			custOrder).Get(ctx, nil)
+
+		if emitEventErr != nil {
+			return emitEventErr
+		}
 	}
 
 	return nil

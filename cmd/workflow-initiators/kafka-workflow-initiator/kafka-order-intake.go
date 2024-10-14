@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"temporal-order-demo/pkg/order"
 	orderworkflow "temporal-order-demo/pkg/order-workflow"
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
@@ -30,47 +29,38 @@ func main() {
 	defer c.Close()
 
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		"group.id":          "cop-workflow-intake",
-		"auto.offset.reset": "latest"})
+		"bootstrap.servers":  "localhost:9092",
+		"group.id":           "cop-workflow-intake",
+		"auto.offset.reset":  "latest",
+		"enable.auto.commit": false})
 
 	if err != nil {
 		log.Fatalln("Failed to create producer: ", err)
 	}
-	err = consumer.SubscribeTopics([]string{"OrderSubmitted"}, nil)
+	defer consumer.Close()
 
-	msg_count := 0
-	run := true
-
-	for run == true {
-		ev := consumer.Poll(5000)
-		switch e := ev.(type) {
-		case *kafka.Message:
-			fmt.Printf("%% Message on %s:\n%s\n", e.TopicPartition, string(e.Value))
+	err = consumer.Subscribe("OrderSubmitted", nil)
+	if err != nil {
+		log.Fatalln("Failed to subscribe: ", err)
+	}
+	for {
+		message, kError := consumer.ReadMessage(3000)
+		if kError == nil {
+			fmt.Printf("%% Message on %s:\n%s\n", message.TopicPartition, string(message.Value))
 
 			var order *order.Order
-			unmarshallErr := json.Unmarshal(e.Value, &order)
+			unmarshallErr := json.Unmarshal(message.Value, &order)
 
 			if unmarshallErr != nil {
 				//TODO: THis is not proper handling of the error at all, come back later with a "plan"
-				log.Fatalln("Bad Payload Received: " + string(e.Value))
+				log.Fatalln("Bad Payload Received: " + string(message.Value))
 			}
 			startWorkflow(c, order)
 
-			msg_count += 1
-			if msg_count%MESSAGE_COMMIT_COUNT == 0 {
-				consumer.Commit()
-				msg_count = 0
-			}
-
-		case kafka.PartitionEOF:
-			fmt.Printf("%% Reached %v\n", e)
-		case kafka.Error:
-			fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
-			run = false
-		default:
-			fmt.Printf("Nothing to do %v\n", e)
-		}
+			consumer.Commit() //TODO: Should really consider moving this to message count based or duration based
+		} else if kError.(kafka.Error).IsFatal() {
+			log.Fatalln("Failed to read from kafka with a non-timeout error: ", err)
+		} //TODO: Assume any other error is a retry for now
 	}
 }
 

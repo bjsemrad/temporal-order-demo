@@ -17,12 +17,12 @@ func main() {
 	}
 
 	defer c.Close()
-	orderNumber := "85150787987" //999
-	runID := "49a400f4-585a-4515-ba3f-6abb72c08510"
+	orderNumber := "order-submitted-2145137998316979647" //999
+	runID := "91d9a221-78da-431a-a046-9300d486cb3b"
 	log.Printf("Sending Signal for Order order " + orderNumber + " run id " + runID)
 
-	err = c.SignalWorkflow(context.Background(), "order-submitted-"+orderNumber, runID, orderworkflowstep.OrderFulfillmentConfirmedChannel, &orderworkflowstep.OrderConfirmedSignal{
-		FulfillmentOrderNumber: "879879879879",
+	err = c.SignalWorkflow(context.Background(), orderNumber, runID, orderworkflowstep.OrderFulfillmentConfirmedChannel, &orderworkflowstep.OrderConfirmedSignal{
+		FulfillmentOrderNumber: "order-submitted-2145137998316979647",
 	})
 
 	if err != nil {

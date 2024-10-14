@@ -17,15 +17,16 @@ type OrderConfirmedSignal struct {
 }
 
 func WaitForConfirmedOrder(ctx workflow.Context, custOrder *order.Order) error {
+	if !order.TerminalOrderStatus(custOrder.Status) {
+		var confirmSignalInput OrderConfirmedSignal
+		workflow.GetSignalChannel(ctx, OrderFulfillmentConfirmedChannel).Receive(ctx, &confirmSignalInput)
+		log.Printf("Received confirmed order signal")
 
-	var confirmSignalInput OrderConfirmedSignal
-	workflow.GetSignalChannel(ctx, OrderFulfillmentConfirmedChannel).Receive(ctx, &confirmSignalInput)
-	log.Printf("Received confirmed order signal")
-
-	custOrder.FullfilmentOrderNumber = confirmSignalInput.FulfillmentOrderNumber
-	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.FullfilmentConfirmed, "Order Confirmed for Fullfilment")
-	if eventError != nil {
-		return eventError
+		custOrder.FullfilmentOrderNumber = confirmSignalInput.FulfillmentOrderNumber
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.FullfilmentConfirmed, "Order Confirmed for Fullfilment")
+		if eventError != nil {
+			return eventError
+		}
 	}
 
 	return nil

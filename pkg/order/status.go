@@ -24,7 +24,7 @@ const (
 
 func TerminalOrderStatus(status OrderStatus) bool {
 	switch status {
-	case Fraudlent, CreditReviewDenied, Rejected, Canceled:
+	case Fraudlent, CreditReviewDenied, Rejected, Canceled, FullfilmentConfirmed:
 		return true
 	default:
 		return false
