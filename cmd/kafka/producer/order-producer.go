@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"strconv"
 	"temporal-order-demo/pkg/order"
+	orderstatus "temporal-order-demo/pkg/order/status"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -43,7 +44,10 @@ func main() {
 		input := &order.Order{
 			Channel:     channel,
 			OrderNumber: orderNumber,
-			Status:      order.Submitted,
+			Status: &orderstatus.OrderStatus{
+				Code:   orderstatus.Submitted,
+				Reason: "submitted",
+			},
 			LastUpdated: time.Now(),
 			Lines: []*order.OrderLine{
 				{LineNumber: 1, Product: "ABC123", Quantity: rand.Intn(10), Price: 10.32},

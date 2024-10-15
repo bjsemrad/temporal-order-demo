@@ -6,6 +6,7 @@ import (
 	creditreviewactivity "temporal-order-demo/pkg/order-activities/creditreview"
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 	orderworkflowutils "temporal-order-demo/pkg/order-workflow/utils"
+	orderstatus "temporal-order-demo/pkg/order/status"
 	"temporal-order-demo/pkg/services/creditreview"
 	"time"
 
@@ -44,7 +45,7 @@ func StartCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 	custOrder.RecordCreditReservation(creditReservation.CreditReserved, creditReservation.AvailableCredit)
 	//Credit Not Reserved so we need to do a review
 	if !creditReservation.CreditReserved {
-		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.PendingCreditReview, "Not enough credit available for Order")
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, orderstatus.PendingCreditReview, "Not enough credit available for Order")
 		if eventError != nil {
 			return eventError
 		}
@@ -61,7 +62,7 @@ func StartCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 		custOrder.RecordCreditReviewDecision(string(cdSignalInput.CreditDecision), cdSignalInput.Reviewier, cdSignalInput.NewLimit, cdSignalInput.DecisionDate)
 
 		if cdSignalInput.CreditDecision == CreditExtended {
-			eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.CreditReviewApproved, "Credit Increase Approved")
+			eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, orderstatus.CreditReviewApproved, "Credit Increase Approved")
 			if eventError != nil {
 				return eventError
 			}
@@ -74,12 +75,12 @@ func StartCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 }
 
 func processCreditDenied(ctx workflow.Context, custOrder *order.Order) error {
-	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.CreditReviewDenied, "Credit Increase Denied")
+	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, orderstatus.CreditReviewDenied, "Credit Increase Denied")
 	if eventError != nil {
 		return eventError
 	}
 
-	eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, order.Canceled, "Not enough credit canceling order")
+	eventError = orderworkflowutils.EmitOrderStatusEvent(ctx, custOrder, orderstatus.Canceled, "Not enough credit canceling order")
 	if eventError != nil {
 		return eventError
 	}

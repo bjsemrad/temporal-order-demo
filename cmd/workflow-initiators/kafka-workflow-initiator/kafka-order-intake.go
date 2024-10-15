@@ -69,6 +69,11 @@ func startWorkflow(c client.Client, order *order.Order) error {
 		ID:                    "order-" + order.Channel + "-" + order.OrderNumber,
 		TaskQueue:             orderworkflowqueues.OrderIntakeTaskQueueName,
 		WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_ALLOW_DUPLICATE_FAILED_ONLY,
+		//We don't want to have a pipeline fail unless there is a real problem, examples
+		//are normal business failures not workflow failures
+		// RetryPolicy: &temporal.RetryPolicy{
+		// 	NonRetryableErrorTypes: []string{"FraudDetectedError", "CreditDeniedError"},
+		// },
 	}
 
 	log.Printf("Starting order processing for order " + order.OrderNumber)

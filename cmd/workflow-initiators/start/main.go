@@ -6,6 +6,7 @@ import (
 	"temporal-order-demo/pkg/order"
 	orderworkflow "temporal-order-demo/pkg/order-workflow"
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
+	orderstatus "temporal-order-demo/pkg/order/status"
 	"time"
 
 	"go.temporal.io/api/enums/v1"
@@ -24,7 +25,10 @@ func main() {
 	orderNumber := "85150787987" //999
 	input := &order.Order{
 		OrderNumber: orderNumber,
-		Status:      order.Submitted,
+		Status: &orderstatus.OrderStatus{
+			Code:   orderstatus.Submitted,
+			Reason: "submitted",
+		},
 		LastUpdated: time.Now(),
 		Lines: []*order.OrderLine{
 			{LineNumber: 1, Product: "ABC123", Quantity: 10, Price: 10.32},

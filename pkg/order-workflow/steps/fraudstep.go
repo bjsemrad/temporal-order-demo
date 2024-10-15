@@ -5,6 +5,7 @@ import (
 	fraudactivity "temporal-order-demo/pkg/order-activities/fraud"
 	orderworkflowqueues "temporal-order-demo/pkg/order-workflow/queues"
 	orderworkflowutils "temporal-order-demo/pkg/order-workflow/utils"
+	orderstatus "temporal-order-demo/pkg/order/status"
 	"temporal-order-demo/pkg/services/fraud"
 
 	"go.temporal.io/sdk/workflow"
@@ -18,7 +19,7 @@ func (m *FraudDetectedError) Error() string {
 
 // TODO: Turn this into a sub-workflow
 func StartFraudCheck(ctx workflow.Context, input *order.Order) error {
-	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.PendingFraudReview, "Begin Fraud Review")
+	eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, orderstatus.PendingFraudReview, "Begin Fraud Review")
 
 	if eventError != nil {
 		return eventError
@@ -37,7 +38,7 @@ func StartFraudCheck(ctx workflow.Context, input *order.Order) error {
 	input.RecoardFraudReviewDecision(fraudOutput.FraudDetected, fraudOutput.RejectionReason, fraudOutput.CheckDate)
 	if fraudOutput.FraudDetected {
 		//Emit fraud detected event
-		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.Fraudlent, "Fraud Detected")
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, orderstatus.Fraudlent, "Fraud Detected")
 		if eventError != nil {
 			return eventError
 		}
@@ -46,7 +47,7 @@ func StartFraudCheck(ctx workflow.Context, input *order.Order) error {
 		//TODO: What do we want to do at this point, cancel or have some intervention
 	} else {
 		//Emit Fraud Review Complete
-		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, order.NoFraudDetected, "Order deemed not fraudlent")
+		eventError := orderworkflowutils.EmitOrderStatusEvent(ctx, input, orderstatus.NoFraudDetected, "Order deemed not fraudlent")
 
 		if eventError != nil {
 			return eventError

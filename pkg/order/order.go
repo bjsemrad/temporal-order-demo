@@ -1,18 +1,25 @@
 package order
 
 import (
+	orderstatus "temporal-order-demo/pkg/order/status"
 	"time"
 )
 
 type Order struct {
 	Channel                string
-	Status                 OrderStatus
+	Status                 *orderstatus.OrderStatus
 	OrderNumber            string
 	FullfilmentOrderNumber string `json:"FullfilmentOrderNumber,omitempty"`
 	Lines                  []*OrderLine
 	Payment                *Payment
 	LastUpdated            time.Time
+	Settings               *OrderSettings
 	PipelineMetadata       *OrderPipelineMetadata
+}
+
+type OrderSettings struct {
+	LiftGateRequired     bool
+	PackingListInEachBox bool
 }
 
 type OrderLine struct {
@@ -34,7 +41,7 @@ type OrderPipelineMetadata struct {
 }
 
 type OrderStatusHistory struct {
-	Status OrderStatus
+	Status orderstatus.OrderStatusCode
 	Reason string
 	Date   time.Time
 }
@@ -73,9 +80,10 @@ func (o *Order) AddLine(lineNumber int, product string, quantity int, price floa
 	o.Lines = append(o.Lines, line)
 }
 
-func (o *Order) UpdateStatus(newStatus OrderStatus, reason string) {
-	o.recordStatusChange(o.Status, reason, o.LastUpdated)
-	o.Status = newStatus
+func (o *Order) UpdateStatus(newStatus orderstatus.OrderStatusCode, reason string) {
+	o.recordStatusChange(o.Status.Code, o.Status.Reason, o.LastUpdated)
+	o.Status.Code = newStatus
+	o.Status.Reason = reason
 	o.LastUpdated = time.Now()
 }
 
@@ -114,7 +122,7 @@ func (o *Order) RecoardFraudReviewDecision(fradulent bool, reason string, review
 	}
 }
 
-func (o *Order) recordStatusChange(status OrderStatus, reason string, statusDate time.Time) {
+func (o *Order) recordStatusChange(status orderstatus.OrderStatusCode, reason string, statusDate time.Time) {
 	o.ensureMetadataInitalized()
 	o.PipelineMetadata.StatusHistory = append(o.PipelineMetadata.StatusHistory, &OrderStatusHistory{
 		Status: status,
