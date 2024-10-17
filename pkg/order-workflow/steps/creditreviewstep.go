@@ -35,7 +35,6 @@ func (m *CreditDeniedError) Error() string {
 	return "Credit Extension Declined"
 }
 
-// TODO: Turn this into a sub-workflow
 func StartCreditReview(ctx workflow.Context, custOrder *order.Order) error {
 	creditReservation, creditReviewErr := startValidateAndReserveActivity(ctx, custOrder)
 	if creditReviewErr != nil {
